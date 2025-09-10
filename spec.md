@@ -103,7 +103,7 @@ interact with the environment.
     * [Return statements](#return-statements)
     * [Expression statements](#expression-statements)
     * [If statements](#if-statements)
-    * [For loops](#for-statements)
+    * [For statements](#for-statements)
     * [Break and Continue](#break-and-continue)
     * [Load statements](#load-statements)
   * [Module execution](#module-execution)
@@ -580,27 +580,35 @@ There are two Boolean values, `True` and `False`, representing the
 truth or falsehood of a predicate.  The [type](#type) of a Boolean is `"bool"`.
 
 Boolean values are typically used as conditions in `if` statements,
-although any Starlark value used as a condition is implicitly
-interpreted as a Boolean.
-For example, the values `None`, `0`, and the empty container values
-`""`, `()`, `[]`, and `{}` have a truth value of `False`, whereas non-zero
-numbers and non-empty container values have a truth value of `True`.
+although any Starlark value may be used in this way.
+Aside from `False` itself, the following core language values are
+considered false in a condition:
+* `None`
+* numerical 0 (`0`, `0.0` and `-0.0`)
+* the empty string (`""`) and empty bytes (`b""`)
+* the empty collections `[]`, `()`, `{}`, and `set()`
+
+All other core language values are considered true.
 Application-defined types determine their own truth value.
+
 Any value may be explicitly converted to a Boolean using the built-in `bool`
 function.
 
-```python
-1 + 1 == 2                              # True
-2 + 2 == 5                              # False
-
-if 1 + 1:
-        print("True")
-else:
-        print("False")
-```
-
 True and False may be converted to the values 1 and 0 using the `int` function,
-but Booleans are not numbers.
+but Booleans are not numbers. Testing a non-Boolean value for equality to a
+Boolean using `==` returns `False`, regardless of whether they have the same
+truth value.
+
+```python
+"A" if 1 + 1 else "B"                   # "A"
+"A" if 0.0 else "B"                     # "B"
+
+if not mylist:
+    empty = True
+
+1 == True                               # False
+bool(1) == True                         # True
+```
 
 ### Integers
 
@@ -785,7 +793,7 @@ One must instead explicitly call a method of a string value to obtain an
 iterable view of its elements. Because strings are not iterable, they are not
 considered to be subtypes of `Collection` or `Sequence`. (Starlark deviates
 from Python here to avoid a common pitfall in which a single string is
-mistakenly used where a list of strings was intended, resulting in exploading
+mistakenly used where a list of strings was intended, resulting in exploding
 the string into its individual characters.)
 
 Any value may formatted as a string using the `str` or `repr` built-in
@@ -2623,7 +2631,7 @@ It is a dynamic error to attempt to update an element of an immutable
 type, such as a tuple or string, or a frozen value of a mutable type.
 
 Starlark does not have a `del` statement like Python. Deleting the value
-associated with an index or key requires calling a method on the container
+associated with an index or key requires calling a method on the containing
 object.
 
 ### Slice expressions
@@ -3061,7 +3069,7 @@ for a, i in [["a", 1], ["b", 2], ["c", 3]]:
   print(a, i)                          # prints "a 1", "b 2", "c 3"
 ```
 
-Because Starlark loops always iterate over a finite container (assuming
+Because Starlark loops always iterate over a finite iterable (assuming
 the host application does not define an unbounded type), they are
 guaranteed to terminate, unlike loops in most languages which can
 execute an arbitrary and perhaps unbounded number of iterations.
