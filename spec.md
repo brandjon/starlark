@@ -103,7 +103,7 @@ interact with the environment.
     * [Return statements](#return-statements)
     * [Expression statements](#expression-statements)
     * [If statements](#if-statements)
-    * [For loops](#for-loops)
+    * [For loops](#for-statements)
     * [Break and Continue](#break-and-continue)
     * [Load statements](#load-statements)
   * [Module execution](#module-execution)
@@ -779,14 +779,14 @@ compared using operators such as `==` and `<`.
 (Beware that the UTF-16 string encoding is not order-preserving
 with respect to code point values.)
 
-Strings are _not_ iterable, so they cannot be used as the operand of
-a `for` loop, list comprehension, or any other operation than requires
-an iterable. Starlark deviates from Python here to avoid a common
-pitfall, in which a string is mistakenly used where a list of strings
-was intended, resulting in exploading the string into its individual
-characters. One must instead explicitly call a method of a string value
-to obtain an iterable view. Because strings are not iterable, they are not
-considered to be subtypes of `Collection` or `Sequence`.
+Strings are _not_ iterable, so they cannot be used as the operand of a `for`
+loop or of methods that expect iterables (such as the `list()` constructor).
+One must instead explicitly call a method of a string value to obtain an
+iterable view of its elements. Because strings are not iterable, they are not
+considered to be subtypes of `Collection` or `Sequence`. (Starlark deviates
+from Python here to avoid a common pitfall in which a single string is
+mistakenly used where a list of strings was intended, resulting in exploading
+the string into its individual characters.)
 
 Any value may formatted as a string using the `str` or `repr` built-in
 functions, the `str % tuple` operator, or the `str.format` method.
@@ -879,7 +879,7 @@ The [type](#type) of a list is `"list"`.
 Lists are a subtype of `Sequence`. The number of elements may be retrieved with
 the built-in `len()` function. Lists can be [indexed](#subscript-expressions)
 to retrieve a single element, and [sliced](#slice-expressions) to produce a new
-list. Lists are iterated over by `for` loops.
+list. Lists can be iterated over by `for` loops.
 
 List may be constructed using bracketed list notation:
 
@@ -1093,7 +1093,7 @@ A dictionary value has these methods:
 
 ### Sets
 
-A set is a mutable, collection of unique values - the set's *elements*.
+A set is a mutable collection of unique values - the set's *elements*.
 The [type](#type) of a set is `"set"`.
 
 Sets provide constant-time operations to insert, remove, or check for the
@@ -1461,8 +1461,8 @@ Except where noted, built-in functions accept only positional arguments.
 After a Starlark file is parsed, but before its execution begins, the
 Starlark interpreter checks statically that the program is well formed.
 For example, `break` and `continue` statements may appear only within
-a loop; `if`, `for`, and `return` statements may appear only within a
-function; and `load` statements may appear only outside any function.
+a `for` statement; `if`, `for`, and `return` statements may appear only
+within a function; and `load` statements may appear only outside any function.
 
 _Name resolution_ is the static checking process that
 resolves names to variable bindings.
@@ -1478,7 +1478,7 @@ Four Starlark constructs bind names, as illustrated in the example below:
 function parameters (`d`),
 and assignments (`e`, `h`, including the augmented assignment `e += h`).
 Variables may be assigned or re-assigned explicitly (`e`, `h`), or implicitly, as
-in a `for` loop (`f`) or comprehension (`g`, `i`).
+in a `for` statement (`f`) or comprehension `for` clause (`g`, `i`).
 
 ```python
 load("lib.star", "a", b="B")
@@ -1755,11 +1755,14 @@ function expects.
 <!-- Not referenced by name until we have type annotations, at which point they
 are type names. -->
 
-* `Collection`: A type that is *iterable* (can appear on the right-hand side
-  of a `for` loop), can have its length taken via the `len()` function, and
-  supports testing for membership via the `in` operator. Examples include
-  `list`, `tuple`, `set`, and `dict` (its elements are its keys), but not
-  `string` or `bytes` since they are not iterable.
+* `Collection`: A type that is:
+  * *iterable* (can appear on the right-hand side of a `for` loop, whether that
+    be a `for` statement or comprehension `for` clause),
+  * can have its length taken via the `len()` function, and
+  * supports testing for membership via the `in` operator.
+
+  Examples include `list`, `tuple`, `set`, and `dict` (its elements are its
+  keys), but not `string` or `bytes` since they are not iterable.
 
 * `Sequence`: A `Collection` that additionally supports subscript and slicing
   expressions, following the semantics of indexing. `list` and `tuple` are
@@ -2479,7 +2482,7 @@ and its result is a dictionary containing the key/value pairs
 for which the body expression was evaluated.
 Evaluation fails if the value of any key is unhashable.
 
-As with a `for` loop, the loop variables may exploit compound
+As with a `for` statement, the loop variables may exploit compound
 assignment:
 
 ```python
@@ -2799,7 +2802,7 @@ a, b = 2, 3
 ```
 
 The same process for assigning a value to a target expression is used
-in `for` loops and in comprehensions.
+in `for` statements and in comprehension `for` clauses.
 
 
 ### Augmented assignments
@@ -3031,9 +3034,9 @@ else:
 An `if` statement is permitted only within a function definition.
 An `if` statement at top level results in a static error.
 
-### For loops
+### For statements
 
-A `for` loop evaluates its operand, which must be an iterable value.
+A `for` statement evaluates its operand, which must be an iterable value.
 Then, for each element of the iterable, the loop assigns
 the successive element values to one or more variables and executes a
 list of statements, the _loop body_.
@@ -3061,20 +3064,20 @@ for a, i in [["a", 1], ["b", 2], ["c", 3]]:
 Because Starlark loops always iterate over a finite container (assuming
 the host application does not define an unbounded type), they are
 guaranteed to terminate, unlike loops in most languages which can
-execute an arbitrary and perhaps unbounded number of iterations.)
+execute an arbitrary and perhaps unbounded number of iterations.
 
 Within the body of a `for` loop, `break` and `continue` statements may
 be used to stop the execution of the loop or advance to the next
 iteration.
 
-In Starlark, a `for` loop is permitted only within a function definition.
-A `for` loop at top level results in a static error.
+In Starlark, a `for` statement is permitted only within a function
+definition. A `for` statement at top level results in a static error.
 
 
 ### Break and Continue
 
 The `break` and `continue` statements terminate the current iteration
-of a `for` loop.  Whereas the `continue` statement resumes the loop at
+of a `for` statement.  Whereas the `continue` statement resumes the loop at
 the next iteration, a `break` statement terminates the entire loop.
 
 ```text
@@ -3152,8 +3155,8 @@ When a Starlark file is executed, whether directly by the application
 or indirectly through a `load` statement, a new Starlark thread is
 created, and this thread executes all the top-level statements in the
 file.
-Because if-statements and for-loops cannot appear outside of a function,
-control flows from top to bottom.
+Because `if` statements and `for` statements cannot appear outside of a
+function, control flows from top to bottom.
 
 If execution reaches the end of the file, module initialization is
 successful.
